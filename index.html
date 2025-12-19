@@ -1,0 +1,211 @@
+
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<title>3D LED Cədvəl</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background: var(--bg);
+        color: var(--text);
+        transition: 0.3s;
+    }
+
+    :root {
+        --bg: #ffffff;
+        --text: #000000;
+        --input-bg: #f2f2f2;
+    }
+
+    .dark {
+        --bg: #1e1e1e;
+        --text: #ffffff;
+        --input-bg: #2b2b2b;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+
+    th, td {
+        border: 1px solid #555;
+        padding: 8px;
+    }
+
+    input {
+        width: 95%;
+        padding: 6px;
+        background: var(--input-bg);
+        border: 1px solid #888;
+        color: var(--text);
+    }
+
+    /* S/S sütunu daraldılıb */
+    th:first-child, td:first-child {
+        width: 40px !important;
+        min-width: 40px !important;
+        max-width: 40px !important;
+        text-align: center;
+    }
+
+    /* LED işıq */
+    .led {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        margin-left: 10px;
+        display: inline-block;
+        animation: blink 1s infinite;
+        box-shadow: 0 0 6px #000, inset 0 0 6px rgba(255,255,255,0.4);
+    }
+
+    /* 3D daha parlaq LED */
+    .led.green {
+        background: radial-gradient(circle, #5aff5a, #00a000);
+        box-shadow: 0 0 10px #00ff00, 0 0 18px #00ff00, inset 0 0 10px #ffffff;
+    }
+
+    .led.yellow {
+        background: radial-gradient(circle, #ffff80, #cc9900);
+        box-shadow: 0 0 10px #ffff00, 0 0 18px #ffcc00, inset 0 0 10px #ffffff;
+    }
+
+    .led.red {
+        background: radial-gradient(circle, #ff8080, #cc0000);
+        box-shadow: 0 0 12px #ff0000, 0 0 22px #ff0000, inset 0 0 10px #ffffff;
+    }
+
+    /* Yanıb-sönmə */
+    @keyframes blink {
+        50% { opacity: 0.3; }
+    }
+
+    .flex {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .mode-btn {
+        padding: 8px 16px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        background: #444;
+        color: white;
+        border: none;
+        border-radius: 6px;
+    }
+</style>
+</head>
+<body>
+
+<h2 style="text-align:center; margin-bottom:20px;">Şəxsiyyət vəsiqəsi Cədvəli</h2>
+
+<button class="mode-btn" onclick="toggleMode()">Dark / Light</button>
+
+<table>
+    <thead>
+        <tr>
+            <th>S/S</th>
+            <th>Soyadı, adı və atasının adı</th>
+            <th>İdarə / Şöbə / Sektor / Hissə</th>
+            <th>Ş.V nömrəsi</th>
+            <th>Bitmə tarixi</th>
+        </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+</table>
+
+<script>
+function saveData() {
+    const rows = [];
+    document.querySelectorAll("#tableBody tr").forEach(tr => {
+        rows.push({
+            name: tr.querySelector(".name").value,
+            dep: tr.querySelector(".dep").value,
+            id: tr.querySelector(".idnum").value,
+            date: tr.querySelector(".date").value
+        });
+    });
+    localStorage.setItem("data", JSON.stringify(rows));
+}
+
+function loadData() {
+    return JSON.parse(localStorage.getItem("data") || "[]");
+}
+
+function updateLED() {
+    document.querySelectorAll("#tableBody tr").forEach(tr => {
+        const dateInput = tr.querySelector(".date");
+        const led = tr.querySelector(".led");
+
+        let val = dateInput.value;
+        if (!val) { 
+            led.className = "led green"; 
+            return; 
+        }
+
+        let today = new Date();
+        today.setHours(0,0,0,0);
+
+        let exp = new Date(val);
+        exp.setHours(0,0,0,0);
+
+        let diff = Math.ceil((exp - today) / (1000 * 60 * 60 * 24));
+
+        if (diff <= 0) {
+            led.className = "led red";
+        }
+        else if (diff <= 3) {
+            led.className = "led yellow";
+        }
+        else {
+            led.className = "led green";
+        }
+    });
+}
+
+function buildTable() {
+    let saved = loadData();
+    let tbody = document.getElementById("tableBody");
+
+    for (let i = 0; i < 200; i++) {
+        let row = saved[i] || { name: "", dep: "", id: "", date: "" };
+
+        tbody.innerHTML += `
+            <tr>
+                <td>${i+1}</td>
+                <td><input class="name" value="${row.name}"></td>
+                <td><input class="dep" value="${row.dep}"></td>
+                <td><input class="idnum" value="${row.id}"></td>
+                <td class="flex">
+                    <input type="date" class="date" value="${row.date}">
+                    <span class="led green"></span>
+                </td>
+            </tr>
+        `;
+    }
+
+    document.querySelectorAll("input").forEach(inp => {
+        inp.addEventListener("input", () => {
+            saveData();
+            updateLED();
+        });
+    });
+
+    updateLED();
+}
+
+function toggleMode() {
+    document.body.classList.toggle("dark");
+}
+
+buildTable();
+</script>
+
+</body>
+</html>
